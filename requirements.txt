@@ -9,3 +9,5 @@ ddgs
 langchain_community
 requests
 python-dotenv
+fastapi
+uvicorn[standard]
