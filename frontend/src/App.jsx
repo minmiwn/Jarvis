@@ -1,4 +1,4 @@
-import { LiveKitRoom } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { useLiveKitToken } from './hooks/useLiveKitToken';
 import Sidebar from './components/layout/Sidebar';
@@ -52,6 +52,9 @@ function App() {
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
                 <BottomBar onDisconnect={handleDisconnect} />
               </div>
+
+              {/* Phát audio từ agent (remote participant) */}
+              <RoomAudioRenderer />
             </LiveKitRoom>
           ) : (
             /* Khi chưa connect → hiện màn hình welcome */

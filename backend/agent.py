@@ -96,6 +96,8 @@ async def entrypoint(ctx: agents.JobContext):
             content=f"The user's name is {user_name}, and this is relevant context about them: {memory_str}."
         )
     
+    await ctx.connect()
+    
     await session.start(
         room=ctx.room,
         agent=Assistant(chat_ctx=initial_ctx),
@@ -106,8 +108,6 @@ async def entrypoint(ctx: agents.JobContext):
             ),
         ),
     )
-    
-    await ctx.connect()
     
     await session.generate_reply(
         instructions=SESSION_INSTRUCTIONS
