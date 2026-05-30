@@ -118,7 +118,9 @@ async def entrypoint(ctx: agents.JobContext):
         instructions=SESSION_INSTRUCTIONS
     )
 
-    ctx.add_shutdown_callback(lambda: shutdown_hook(session._agent.chat_ctx, mem0, user_name, memory_str))
+    async def _on_shutdown():
+        await shutdown_hook(initial_ctx, mem0, user_name, memory_str)
+    ctx.add_shutdown_callback(_on_shutdown)
     
 if __name__ == "__main__":
     agents.cli.run_app(agents.WorkerOptions(entrypoint_fnc=entrypoint))

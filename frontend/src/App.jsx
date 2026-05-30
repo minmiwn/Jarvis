@@ -8,8 +8,6 @@ import BottomBar from './components/controls/BottomBar';
 import './App.css';
 
 import backgroundImg from './assets/background.jpg';
-import cat1Img from './assets/cat1.png';
-import cat4Img from './assets/cat4.png';
 import chibiImg from './assets/chibi.png';
 
 /* Falling petals decoration */
