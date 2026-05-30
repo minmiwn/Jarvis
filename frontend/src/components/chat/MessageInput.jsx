@@ -1,12 +1,18 @@
 import { useState } from 'react';
+import { useChat } from '@livekit/components-react';
 
 export default function MessageInput() {
     const [text, setText] = useState('');
+    const { send } = useChat();
 
-    const handleSend = () => {
+    const handleSend = async () => {
         if (!text.trim()) return;
-        // TODO: Send text message to agent via LiveKit data channel
-        setText('');
+        try {
+            await send(text);
+            setText('');
+        } catch (err) {
+            console.error('Failed to send chat message:', err);
+        }
     };
 
     const handleKeyDown = (e) => {

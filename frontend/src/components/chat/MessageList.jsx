@@ -1,10 +1,11 @@
-import { useVoiceAssistant, useLocalParticipant, useTrackTranscription } from '@livekit/components-react';
+import { useVoiceAssistant, useLocalParticipant, useTrackTranscription, useChat } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { useMemo, useRef, useEffect } from 'react';
 
 export default function MessageList() {
     const { agentTranscriptions } = useVoiceAssistant();
     const { localParticipant, microphoneTrack } = useLocalParticipant();
+    const { chatMessages } = useChat();
 
     // Build a TrackReference for the local mic so useTrackTranscription can read it
     const localMicTrackRef = useMemo(() => {
@@ -20,7 +21,7 @@ export default function MessageList() {
 
     const { segments: userSegments } = useTrackTranscription(localMicTrackRef);
 
-    // Merge agent + user transcriptions, sorted by time
+    // Merge agent + user transcriptions + chat messages, sorted by time
     const messages = useMemo(() => {
         const agentMsgs = (agentTranscriptions || []).map(t => ({
             id: `agent-${t.id}`,
@@ -38,8 +39,16 @@ export default function MessageList() {
             timestamp: t.firstReceivedTime ?? 0,
         }));
 
-        return [...agentMsgs, ...userMsgs].sort((a, b) => a.timestamp - b.timestamp);
-    }, [agentTranscriptions, userSegments]);
+        const chatMsgs = (chatMessages || []).map(msg => ({
+            id: `chat-${msg.id || msg.timestamp}`,
+            role: msg.from?.isLocal ? 'user' : 'assistant',
+            text: msg.message,
+            final: true,
+            timestamp: msg.timestamp,
+        }));
+
+        return [...agentMsgs, ...userMsgs, ...chatMsgs].sort((a, b) => a.timestamp - b.timestamp);
+    }, [agentTranscriptions, userSegments, chatMessages]);
 
     // Auto-scroll to bottom
     const boxRef = useRef(null);

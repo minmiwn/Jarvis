@@ -44,6 +44,11 @@ echo "  ║  Frontend:     vite :5173             ║"
 echo "  ╚═══════════════════════════════════════╝"
 echo -e "${NC}"
 
+# --- Activate virtual environment ---
+if [ -d "$ROOT_DIR/.venv" ]; then
+    source "$ROOT_DIR/.venv/bin/activate"
+fi
+
 # --- Check & install dependencies ---
 echo -e "${YELLOW}🔍 Checking dependencies...${NC}"
 
