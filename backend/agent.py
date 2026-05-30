@@ -21,9 +21,9 @@ def _extract_memories(response):
 
 
 class Assistant(Agent):
-    def __init__(self, chat_ctx=None) -> None:
+    def __init__(self, instructions: str = AGENT_INSTRUCTIONS, chat_ctx=None) -> None:
         super().__init__(
-            instructions=AGENT_INSTRUCTIONS,
+            instructions=instructions,
             llm=google.beta.realtime.RealtimeModel(
                 voice="Puck",
                 temperature=0.8,
@@ -67,8 +67,11 @@ async def entrypoint(ctx: agents.JobContext):
             return
 
         logging.info(f"Formatted messages to add to memory: {messages_formatted}")
-        await mem0.add(messages_formatted, user_id=user_name)
-        logging.info("Chat context saved to memory.")
+        try:
+            await mem0.add(messages_formatted, user_id=user_name)
+            logging.info("Chat context saved to memory.")
+        except Exception as e:
+            logging.error(f"Failed to add chat context to memory: {e}")
 
     session = AgentSession(
     )
@@ -76,31 +79,33 @@ async def entrypoint(ctx: agents.JobContext):
     mem0 = AsyncMemoryClient()
     user_name = 'Minh'
     
-    response = await mem0.get_all(filters={"user_id": user_name})
-    results = _extract_memories(response)
     initial_ctx = ChatContext()
     memory_str = ''
+    agent_instructions = AGENT_INSTRUCTIONS
     
-    if results: 
-        memories = [
-            {
-                "memory": result["memory"],
-                "updated_at": result["updated_at"]
-            }
-            for result in results
-        ]
-        memory_str = json.dumps(memories)
-        logging.info(f"Memories: {memory_str}")
-        initial_ctx.add_message(
-            role="assistant",
-            content=f"The user's name is {user_name}, and this is relevant context about them: {memory_str}."
-        )
+    try:
+        response = await mem0.get_all(filters={"user_id": user_name})
+        results = _extract_memories(response)
+        if results: 
+            memories = [
+                {
+                    "memory": result["memory"],
+                    "updated_at": result["updated_at"]
+                }
+                for result in results
+            ]
+            memory_str = json.dumps(memories)
+            logging.info(f"Memories: {memory_str}")
+            # Inject memory context to system instructions instead of chat_ctx to satisfy Gemini role rules
+            agent_instructions += f"\n\nHere is relevant context about the user (their name is {user_name}): {memory_str}"
+    except Exception as e:
+        logging.error(f"Error fetching memories from mem0: {e}")
     
     await ctx.connect()
     
     await session.start(
         room=ctx.room,
-        agent=Assistant(chat_ctx=initial_ctx),
+        agent=Assistant(instructions=agent_instructions, chat_ctx=initial_ctx),
         room_options=room_io.RoomOptions(
             video_input=True,
             audio_input=room_io.AudioInputOptions(

@@ -7,7 +7,7 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                pixel: ['"Press Start 2P"', 'monospace'],
+                comfortaa: ['Comfortaa', 'sans-serif'],
             }
         },
     },

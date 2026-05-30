@@ -1,12 +1,45 @@
 import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { useLiveKitToken } from './hooks/useLiveKitToken';
-import Sidebar from './components/layout/Sidebar';
-import ChatHeader from './components/chat/ChatHeader';
 import Visualizer from './components/chat/Visualizer';
 import MessageList from './components/chat/MessageList';
 import MessageInput from './components/chat/MessageInput';
 import BottomBar from './components/controls/BottomBar';
+import './App.css';
+
+import backgroundImg from './assets/background.jpg';
+import cat1Img from './assets/cat1.png';
+import cat4Img from './assets/cat4.png';
+import chibiImg from './assets/chibi.png';
+
+/* Falling petals decoration */
+function FallingPetals() {
+  const petals = Array.from({ length: 15 }, (_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    delay: `${Math.random() * 8}s`,
+    duration: `${6 + Math.random() * 6}s`,
+    size: `${8 + Math.random() * 10}px`,
+  }));
+
+  return (
+    <>
+      {petals.map((p) => (
+        <div
+          key={p.id}
+          className="petal"
+          style={{
+            left: p.left,
+            animationDelay: p.delay,
+            animationDuration: p.duration,
+            width: p.size,
+            height: p.size,
+          }}
+        />
+      ))}
+    </>
+  );
+}
 
 function App() {
   const { token, url, loading, error, fetchToken, disconnect } = useLiveKitToken();
@@ -19,68 +52,79 @@ function App() {
     disconnect();
   };
 
+  const getStatusText = () => {
+    if (token) return 'Connected';
+    if (loading) return 'Connecting';
+    if (error) return 'Disconnected';
+    return 'Offline';
+  };
+
+  const getStatusClass = () => {
+    if (token) return 'connected';
+    if (error) return 'error';
+    return '';
+  };
+
   return (
-    <div className="flex h-screen w-full bg-[#110524] text-white p-4 font-pixel">
-      <div className="flex w-full h-full border border-purple-800 rounded-xl overflow-hidden bg-[#16082a]">
+    <div className="font-comfortaa" style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+      {/* Background */}
+      <div className="jarvis-bg" style={{ backgroundImage: `url(${backgroundImg})` }} />
 
-        {/* 1. Sidebar */}
-        <div className="w-1/4 border-r border-purple-800 flex flex-col">
-          <Sidebar connected={!!token} onDisconnect={handleDisconnect} />
-        </div>
+      {/* Falling petals */}
+      <FallingPetals />
 
-        {/* 2. Chat area */}
-        <div className="w-3/4 flex flex-col relative">
-          <ChatHeader connected={!!token} loading={loading} error={error} />
+      {/* Main content */}
+      <div className="jarvis-container">
+        <div className={`main-panel${token ? ' panel-connected' : ''}`}>
+
+          {/* Robot avatar */}
+          <div className="robot-frame">
+            <img src={chibiImg} alt="Jarvis Robot" className="robot-gif" />
+          </div>
 
           {token ? (
-            /* Khi đã có token → bọc trong LiveKitRoom để bật WebRTC */
+            /* Connected: LiveKit room */
             <LiveKitRoom
               token={token}
               serverUrl={url}
               audio={true}
               video={false}
               onDisconnected={handleDisconnect}
-              className="flex flex-col flex-1 overflow-hidden"
+              style={{ display: 'contents' }}
             >
-              <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-                <Visualizer />
-                <MessageList />
-              </div>
+              {/* Visualizer (agent state) */}
+              <Visualizer />
 
+              {/* Transcript / Chat */}
+              <MessageList />
+
+              {/* Text input */}
               <MessageInput />
 
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-                <BottomBar onDisconnect={handleDisconnect} />
-              </div>
+              {/* Controls */}
+              <BottomBar onDisconnect={handleDisconnect} />
 
-              {/* Phát audio từ agent (remote participant) */}
+              {/* Audio renderer */}
               <RoomAudioRenderer />
             </LiveKitRoom>
           ) : (
-            /* Khi chưa connect → hiện màn hình welcome */
-            <div className="flex-1 flex flex-col items-center justify-center gap-6 p-6">
-              <div className="w-32 h-32 bg-purple-600 rounded-3xl flex items-center justify-center shadow-[0_0_40px_rgba(147,51,234,0.6)] animate-pulse">
-                <span className="text-5xl">🤖</span>
-              </div>
-              <p className="text-gray-400 text-sm">Jarvis đang chờ kết nối...</p>
-
+            /* Not connected: welcome */
+            <div className="welcome-area">
               {error && (
-                <p className="text-red-400 text-xs bg-red-900/30 px-4 py-2 rounded-lg border border-red-700">
-                  ⚠️ {error}
-                </p>
+                <p className="error-msg">⚠️ {error}</p>
               )}
 
               <button
                 onClick={handleConnect}
                 disabled={loading}
-                className="px-8 py-3 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-sm shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all hover:shadow-[0_0_30px_rgba(147,51,234,0.7)] hover:scale-105 active:scale-95"
+                className="connect-btn"
               >
-                {loading ? '⏳ Đang kết nối...' : '🚀 Connect to Jarvis'}
+                {loading ? '⏳ Connecting...' : '🌸 Connect to Jarvis'}
               </button>
             </div>
           )}
-        </div>
 
+        </div>
       </div>
     </div>
   );

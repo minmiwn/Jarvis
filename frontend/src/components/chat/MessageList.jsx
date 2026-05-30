@@ -1,50 +1,79 @@
-import { useVoiceAssistant } from '@livekit/components-react';
+import { useVoiceAssistant, useLocalParticipant, useTrackTranscription } from '@livekit/components-react';
+import { Track } from 'livekit-client';
+import { useMemo, useRef, useEffect } from 'react';
 
 export default function MessageList() {
     const { agentTranscriptions } = useVoiceAssistant();
+    const { localParticipant, microphoneTrack } = useLocalParticipant();
 
+    // Build a TrackReference for the local mic so useTrackTranscription can read it
+    const localMicTrackRef = useMemo(() => {
+        if (microphoneTrack?.track) {
+            return {
+                participant: localParticipant,
+                publication: microphoneTrack,
+                source: Track.Source.Microphone,
+            };
+        }
+        return undefined;
+    }, [localParticipant, microphoneTrack]);
 
-    // Kết hợp transcript của agent và user, sắp xếp theo thời gian
-    const messages = (agentTranscriptions || []).map(t => ({
-        id: t.id,
-        role: t.role || 'assistant', // 'user' hoặc 'assistant'
-        text: t.text,
-        final: t.final,
-        timestamp: t.firstReceivedTime,
-    }));
+    const { segments: userSegments } = useTrackTranscription(localMicTrackRef);
+
+    // Merge agent + user transcriptions, sorted by time
+    const messages = useMemo(() => {
+        const agentMsgs = (agentTranscriptions || []).map(t => ({
+            id: `agent-${t.id}`,
+            role: 'assistant',
+            text: t.text,
+            final: t.final,
+            timestamp: t.firstReceivedTime ?? 0,
+        }));
+
+        const userMsgs = (userSegments || []).map(t => ({
+            id: `user-${t.id}`,
+            role: 'user',
+            text: t.text,
+            final: t.final,
+            timestamp: t.firstReceivedTime ?? 0,
+        }));
+
+        return [...agentMsgs, ...userMsgs].sort((a, b) => a.timestamp - b.timestamp);
+    }, [agentTranscriptions, userSegments]);
+
+    // Auto-scroll to bottom
+    const boxRef = useRef(null);
+    useEffect(() => {
+        if (boxRef.current) {
+            boxRef.current.scrollTop = boxRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     if (messages.length === 0) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center text-gray-600 text-sm gap-2">
-                <span className="text-2xl">💬</span>
-                <p>Hãy nói gì đó để bắt đầu...</p>
+            <div className="chat-box" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D09494' }}>
+                <p>Hãy nói gì đó để bắt đầu... 🌸</p>
             </div>
         );
     }
 
     return (
-        <div className="flex-1 flex flex-col gap-4 overflow-y-auto mb-20 pr-2 mt-6">
+        <div className="chat-box" ref={boxRef}>
             {messages.map((msg) => (
-                <div
-                    key={msg.id}
-                    className={`flex flex-col max-w-[70%] ${msg.role === 'user' ? 'self-end' : 'self-start'}`}
-                >
+                <div key={msg.id} style={{ marginBottom: '0.4rem' }}>
                     {msg.role === 'user' ? (
-                        /* Tin nhắn của User */
-                        <div className="bg-purple-700 p-4 rounded-xl rounded-tr-none shadow-lg">
-                            <p className={`text-sm ${!msg.final ? 'opacity-60 italic' : ''}`}>
-                                {msg.text}
-                                {!msg.final && <span className="ml-1 animate-pulse">...</span>}
-                            </p>
-                        </div>
+                        <p style={{ opacity: msg.final ? 1 : 0.6 }}>
+                            <span className="user-dot" />
+                            <span style={{ fontWeight: 600, color: '#BD7171' }}>User : </span>
+                            <span>{msg.text}</span>
+                            {!msg.final && <span style={{ animation: 'pulse 1.5s infinite' }}> ...</span>}
+                        </p>
                     ) : (
-                        /* Tin nhắn của Jarvis */
-                        <div className="border border-purple-700 bg-purple-900/40 p-4 rounded-xl rounded-tl-none shadow-lg">
-                            <p className={`text-sm ${!msg.final ? 'opacity-70 italic' : ''}`}>
-                                {msg.text}
-                                {!msg.final && <span className="ml-1 animate-pulse">▌</span>}
-                            </p>
-                        </div>
+                        <p style={{ opacity: msg.final ? 1 : 0.7 }}>
+                            <span style={{ fontWeight: 600, color: '#8B6060' }}>Jarvis : </span>
+                            <span>{msg.text}</span>
+                            {!msg.final && <span style={{ animation: 'pulse 1.5s infinite' }}> ▌</span>}
+                        </p>
                     )}
                 </div>
             ))}

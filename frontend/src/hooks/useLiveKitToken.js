@@ -4,7 +4,7 @@ const TOKEN_SERVER = import.meta.env.VITE_TOKEN_SERVER_URL || 'http://localhost:
 
 export function useLiveKitToken() {
     const [token, setToken] = useState(null);
-    const [url] = useState(import.meta.env.VITE_LIVEKIT_URL);
+    const [url, setUrl] = useState(import.meta.env.VITE_LIVEKIT_URL);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -20,6 +20,9 @@ export function useLiveKitToken() {
             if (!res.ok) throw new Error(`Token server error: ${res.status}`);
             const data = await res.json();
             setToken(data.token);
+            if (data.url) {
+                setUrl(data.url);
+            }
             return data.token;
         } catch (err) {
             setError(err.message);
