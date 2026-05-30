@@ -5,10 +5,17 @@ export default function BottomBar({ onDisconnect }) {
     const { state } = useVoiceAssistant();
 
     const isMicEnabled = localParticipant?.isMicrophoneEnabled ?? false;
+    const isCameraEnabled = localParticipant?.isCameraEnabled ?? false;
 
     const toggleMic = async () => {
         if (localParticipant) {
             await localParticipant.setMicrophoneEnabled(!isMicEnabled);
+        }
+    };
+
+    const toggleCamera = async () => {
+        if (localParticipant) {
+            await localParticipant.setCameraEnabled(!isCameraEnabled);
         }
     };
 
@@ -21,6 +28,15 @@ export default function BottomBar({ onDisconnect }) {
                 className={`ctrl-btn ${isMicEnabled ? 'mic-on' : 'mic-off'}`}
             >
                 {isMicEnabled ? '🎤' : '🔇'}
+            </button>
+
+            {/* Camera toggle */}
+            <button
+                onClick={toggleCamera}
+                title={isCameraEnabled ? 'Tắt camera' : 'Bật camera'}
+                className={`ctrl-btn ${isCameraEnabled ? 'cam-on' : 'cam-off'}`}
+            >
+                {isCameraEnabled ? '📹' : '📵'}
             </button>
 
             {/* End Call */}

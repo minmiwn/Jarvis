@@ -1,4 +1,5 @@
-import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer, useLocalParticipant, VideoTrack } from '@livekit/components-react';
+import { Track } from 'livekit-client';
 import '@livekit/components-styles';
 import { useLiveKitToken } from './hooks/useLiveKitToken';
 import Visualizer from './components/chat/Visualizer';
@@ -39,6 +40,28 @@ function FallingPetals() {
   );
 }
 
+/* Local Camera Preview Component */
+function LocalCameraPreview() {
+  const { localParticipant } = useLocalParticipant();
+  const isCameraEnabled = localParticipant?.isCameraEnabled ?? false;
+
+  if (!isCameraEnabled) return null;
+
+  const cameraPub = localParticipant?.getTrackPublication(Track.Source.Camera);
+  const trackRef = cameraPub ? {
+    participant: localParticipant,
+    source: Track.Source.Camera,
+    publication: cameraPub,
+  } : null;
+
+  return (
+    <div className="camera-frame">
+      {trackRef && <VideoTrack trackRef={trackRef} className="camera-video" />}
+      <div className="camera-label">Bạn</div>
+    </div>
+  );
+}
+
 function App() {
   const { token, url, loading, error, fetchToken, disconnect } = useLiveKitToken();
 
@@ -75,11 +98,6 @@ function App() {
       <div className="jarvis-container">
         <div className={`main-panel${token ? ' panel-connected' : ''}`}>
 
-          {/* Robot avatar */}
-          <div className="robot-frame">
-            <img src={chibiImg} alt="Jarvis Robot" className="robot-gif" />
-          </div>
-
           {token ? (
             /* Connected: LiveKit room */
             <LiveKitRoom
@@ -90,6 +108,14 @@ function App() {
               onDisconnected={handleDisconnect}
               style={{ display: 'contents' }}
             >
+              {/* Avatars container (Robot + User Camera) */}
+              <div className="avatars-container">
+                <div className="robot-frame">
+                  <img src={chibiImg} alt="Jarvis Robot" className="robot-gif" />
+                </div>
+                <LocalCameraPreview />
+              </div>
+
               {/* Visualizer (agent state) */}
               <Visualizer />
 
@@ -107,19 +133,26 @@ function App() {
             </LiveKitRoom>
           ) : (
             /* Not connected: welcome */
-            <div className="welcome-area">
-              {error && (
-                <p className="error-msg">⚠️ {error}</p>
-              )}
+            <>
+              {/* Robot avatar */}
+              <div className="robot-frame">
+                <img src={chibiImg} alt="Jarvis Robot" className="robot-gif" />
+              </div>
 
-              <button
-                onClick={handleConnect}
-                disabled={loading}
-                className="connect-btn"
-              >
-                {loading ? '⏳ Connecting...' : '🌸 Connect to Jarvis'}
-              </button>
-            </div>
+              <div className="welcome-area">
+                {error && (
+                  <p className="error-msg">⚠️ {error}</p>
+                )}
+
+                <button
+                  onClick={handleConnect}
+                  disabled={loading}
+                  className="connect-btn"
+                >
+                  {loading ? '⏳ Connecting...' : '🌸 Connect to Jarvis'}
+                </button>
+              </div>
+            </>
           )}
 
         </div>
