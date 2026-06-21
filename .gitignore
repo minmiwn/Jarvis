@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 promps.py
 config_uxui.md
+config_tools.md

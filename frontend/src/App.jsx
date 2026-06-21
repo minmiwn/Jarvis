@@ -104,7 +104,7 @@ function App() {
               token={token}
               serverUrl={url}
               audio={true}
-              video={false}
+              video={true}
               onDisconnected={handleDisconnect}
               style={{ display: 'contents' }}
             >

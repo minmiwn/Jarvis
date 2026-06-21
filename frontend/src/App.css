@@ -145,6 +145,29 @@
   border-radius: 3px;
 }
 
+.jarvis-image-message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  opacity: 1;
+}
+
+.jarvis-image-label {
+  color: #8B6060;
+  font-weight: 600;
+}
+
+.jarvis-screenshot {
+  display: block;
+  width: min(100%, 560px);
+  max-height: 320px;
+  object-fit: contain;
+  border: 2px solid #E0A0A0;
+  border-radius: 10px;
+  background: #F7EEEE;
+}
+
 /* Transcript label */
 .transcript-label {
   color: #BD7171;

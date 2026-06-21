@@ -1,17 +1,25 @@
 from dotenv import load_dotenv
+from pathlib import Path
 
 from livekit import agents
 from livekit.agents import AgentSession, Agent, room_io, ChatContext
 from livekit.plugins import (
     noise_cancellation,
 )
-from livekit.plugins import google 
+from livekit.plugins import google
 from promps import AGENT_INSTRUCTIONS, SESSION_INSTRUCTIONS
 from tools import search_web, get_weather
+from vision import answer_captured_screen, capture_screen, set_chat_room
 from mem0 import AsyncMemoryClient
 import json
 import logging
-load_dotenv(".env")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
+load_dotenv(Path(__file__).parent / ".env")
 
 
 def _extract_memories(response):
@@ -31,6 +39,8 @@ class Assistant(Agent):
             tools=[
                 get_weather,
                 search_web,
+                capture_screen,
+                answer_captured_screen,
             ],
             chat_ctx=chat_ctx
         )
@@ -44,7 +54,8 @@ async def entrypoint(ctx: agents.JobContext):
 
         logging.info(f"Chat context messages: {chat_ctx.items}")
 
-        for item in chat_ctx.items:
+        items = getattr(chat_ctx, "items", None) or []
+        for item in items:
             if getattr(item, "role", None) not in ["user", "assistant"]:
                 continue
 
@@ -52,14 +63,21 @@ async def entrypoint(ctx: agents.JobContext):
             if content is None:
                 continue
 
-            content_str = ''.join(content) if isinstance(content, list) else str(content)
+            if isinstance(content, list):
+                content_str = ''.join(str(c) for c in content if c)
+            else:
+                content_str = str(content)
+
+            content_str = content_str.strip()
+            if not content_str:
+                continue
 
             if memory_str and memory_str in content_str:
                 continue
 
             messages_formatted.append({
                 "role": item.role,
-                "content": content_str.strip()
+                "content": content_str
             })
 
         if not messages_formatted:
@@ -102,6 +120,7 @@ async def entrypoint(ctx: agents.JobContext):
         logging.error(f"Error fetching memories from mem0: {e}")
     
     await ctx.connect()
+    set_chat_room(ctx.room)
     
     await session.start(
         room=ctx.room,
